@@ -56,7 +56,7 @@ class NonogramSolver:
                             else: self.rows_possibilities[ri] = self.remove_possibilities(self.rows_possibilities[ri], ci, val)
                             self.changed = True
                             #clear_output(wait=True)
-                            self.display_board()
+                            #self.display_board()
                             if self.savepath != '':
                                 self.save_board()
                                 self.n += 1
@@ -130,7 +130,7 @@ class NonogramSolver:
         # for row in self.board:
         #     print(' '.join(['·' if x == 1 else ' ' if x == 0 else 'x' for x in row]))
         #print(np.array(self.board))
-        time.sleep(0.01)
+        time.sleep(0.02)
 
     def save_board(self, increase_size=20):
         name = f'0000000{str(self.n)}'[-8:]

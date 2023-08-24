@@ -14,7 +14,7 @@ def click_board(board,offset=(0,0),size=30):
 def click(x,y):
     win32api.SetCursorPos((x,y))
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-    time.sleep(0.03)
+    time.sleep(0.020)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
 
 
@@ -22,7 +22,7 @@ def getCursorPos():
     return win32api.GetCursorPos()
 
 def findWindow():
-    hwnd = win32gui.FindWindow(None, 'AnLink')
+    hwnd = win32gui.FindWindow(None, 'AnLink 安联')
     if hwnd == 0:
         return None
     return hwnd
@@ -36,9 +36,15 @@ def setForegroundWindow(hwnd):
 
 if __name__ == '__main__':
     hwnd = findWindow()
-    setForegroundWindow(hwnd)
+    if hwnd == None:
+        print('未找到窗口')
+        exit()
+    # setForegroundWindow(hwnd)
     l,t,r,b = getWindowRect(hwnd)
-    offset = (int(l+(r-l)*0.4219),int(t+(b-t)*0.3509))
+    #time.sleep(0.1)
+    click(r-30,(t+b)//2+30)
+    time.sleep(0.4)
+    offset = (int(l+(r-l)*0.3028),int(t+(b-t)*0.3509))
     size = int(0.02252*(b-t))
     c,r,e = reconize.get_board(15)
     solver = nonogram.NonogramSolver(
