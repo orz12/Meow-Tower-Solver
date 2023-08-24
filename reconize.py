@@ -1,8 +1,13 @@
-import pytesseract
+from tesserocr import PyTessBaseAPI, PSM
 from PIL import Image, ImageGrab
 # import win32gui, win32api, win32con
 import cv2
 import numpy as np
+
+print("初始化OCR引擎……")
+MY_TESSDATA_PATH = r'E:\Program Files\Tesseract-OCR\tessdata'
+api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, path = MY_TESSDATA_PATH, lang='eng')
+api.SetVariable("tessedit_char_whitelist", "0123456789")
 
 def fetch_image():
     grab_image = ImageGrab.grabclipboard()
@@ -51,13 +56,11 @@ def get_number_hint(img,n):
     row_hints = []
     col_hints = []
     for i in range(n):
-        print('\r{}%'.format(i*100//n), end='')
         row_hint_binary = row_hints_binary[:,i*size:(i+1)*size]
         col_hint_binary = col_hints_binary[i*size:(i+1)*size,:]
         
         row_hints.append(divide_with_contour(row_hint_binary, 1,n))
         col_hints.append(divide_with_contour(col_hint_binary, 0,n))
-    print('\r', end='')
     print(row_hints)
     print(col_hints)
     return row_hints, col_hints
@@ -99,30 +102,38 @@ def divide_with_contour(img, sortkey, n):
             current_hint_number = recognize_number(current_hint_binary).replace('\n', '').replace('g', '9')
             if current_hint_number == '' or current_hint_number.isdigit() == False or \
                     int(current_hint_number) > 15 or current_hint_number == '0':
-                print('error2',x, y, w, h, current_hint_number)
+                #print('error2',x, y, w, h, current_hint_number)
                 return -1
             else:
                 return current_hint_number
         current_hint_number = recognize_and_check(current_hint_binary)
-        if current_hint_number == -1:
+        for try_times in range(2):
+            if current_hint_number != -1:
+                break
             current_hint_binary = cv2.dilate(current_hint_binary, np.ones((2,2),np.uint8), iterations=1)
             current_hint_number = recognize_and_check(current_hint_binary)
-            if current_hint_number == -1:
-                print('error',x, y, w, h, current_hint_number)
-                cv2.imshow('current_hint_binary', current_hint_binary)
-                cv2.imshow('img', img)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-            else:
-                print('dilate ',x, y, w, h, current_hint_number)
-
+            if try_times > 0:
+                print('dilated twice at:',x, y, w, h, 'the number is:', current_hint_number)
+        if current_hint_number == -1:
+            print('error',x, y, w, h, current_hint_number)
+            cv2.imshow('current_hint_binary', current_hint_binary)
+            cv2.imshow('img', img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+            exit(-1)
         current_hint.append(int(current_hint_number))
         adhesive = x + w if sortkey==0 else y
     return current_hint
 
 def recognize_number(img):
-    #img2 = Image.fromarray(img)
-    text = pytesseract.image_to_string(img, lang='eng', config='--psm 7 -c tessedit_char_whitelist=0123456789g')
+    #https://github.com/sirfz/tesserocr/issues/198#issuecomment-748955981
+    bytes_per_pixel = 0
+    height = img.shape[:2][0]
+    image = np.packbits(img, axis=1)
+    bytes_per_line = image.shape[1]
+    width = bytes_per_line * 8
+    api.SetImageBytes(image.tobytes(), width, height, bytes_per_pixel, bytes_per_line)
+    text = api.GetUTF8Text()
     return text
 
 def get_board_binary(img):
